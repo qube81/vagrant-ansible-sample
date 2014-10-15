@@ -49,3 +49,15 @@
           - apache2
           - mysql
       tags: reload
+ 
+
+- hosts: local
+  sudo: false
+  tasks:  
+    - name: Send notification message via Slack
+      local_action:
+        module: slack
+        domain: xxxx.slack.com
+        token: xxxxxxxxxxxxxxx
+        msg: "ansibleからの終了webhook to slack"
+        channel: "#general"
