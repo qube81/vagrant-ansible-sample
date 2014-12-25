@@ -1,0 +1,12 @@
+document_root: "/var/www/html"
+
+apache_user: "vagrant"
+apache_group: "apache"
+
+mysql_database: "hoge"
+mysql_user: "fuga"
+mysql_password: "hage"
+
+mysql_test_database: "circle_test"
+mysql_test_user: "ubuntu"
+mysql_test_password: ""

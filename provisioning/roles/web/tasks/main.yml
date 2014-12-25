@@ -1,0 +1,93 @@
+- name: add remi repository
+  yum: name=http://rpms.famillecollet.com/enterprise/remi-release-6.rpm state=present
+
+- name: add epel repository
+  yum: name=http://dl.fedoraproject.org/pub/epel/6/x86_64/epel-release-6-8.noarch.rpm state=present
+
+- name: Install Apache, MySQL
+  yum: name={{ item }} state=latest
+  with_items:
+    - httpd
+    - mod_ssl
+    - mysql
+    - mysql-server
+    - MySQL-python
+    - libselinux-python
+    - tree
+  notify: httpd restart
+  
+- name: Install PHP
+  yum: name={{ item }} state=latest enablerepo=remi,epel
+  with_items:
+    - php
+    - php-devel
+    - php-mbstring
+    - php-mcrypt
+    - php-mysql
+    - php-phpunit-PHPUnit
+    - php-pecl-xdebug
+    - php-cli
+    - php-common
+  notify: httpd restart
+
+- name: disable selinux
+  selinux: state=disabled
+
+- name: disable iptable
+  service: name=iptables state=stopped
+
+- name: Set TimeZone
+  command: cp -a /usr/share/zoneinfo/Asia/Tokyo /etc/localtime
+
+- name: replace my.cnf
+  template: src=my.cnf.j2 dest=/etc/my.cnf owner=root group=root mode=0644
+  notify: mysqld restart
+
+- name: mysqld start
+  service: name=mysqld enabled=yes state=started
+
+- name: httpd start
+  service: name=httpd enabled=yes state=started
+
+- name: Create MySQL database
+  mysql_db: name={{ mysql_database }} encoding=utf8 state=present
+  notify: mysqld restart
+
+- name: Create MySQL database for test
+  mysql_db: name={{ mysql_test_database }} encoding=utf8 state=present
+  notify: mysqld restart
+
+- name: Create MySQL user
+  mysql_user: name={{ mysql_user }} password={{ mysql_password }} priv={{ mysql_database }}.*:ALL state=present
+  notify: mysqld restart
+
+- name: Create MySQL user for test
+  mysql_user: name={{ mysql_test_user }} password={{ mysql_test_password }} priv={{ mysql_test_database }}.*:ALL state=present
+  notify: mysqld restart
+
+- name: replace php.ini
+  template: src=php.ini.j2 dest=/etc/php.ini owner=root group=root mode=0644
+  notify: httpd restart
+
+- name: replace httpd.conf
+  template: src=httpd.conf.j2 dest=/etc/httpd/conf/httpd.conf owner=root group=root mode=0644
+  notify: httpd restart
+
+- name: replace php.conf
+  template: src=php.conf.j2 dest=/etc/httpd/conf.d/php.conf owner=root group=root mode=0644
+  notify: httpd restart
+  
+- name: replace ssl.conf
+  template: src=ssl.conf.j2 dest=/etc/httpd/conf.d/ssl.conf owner=root group=root mode=0644
+  notify: httpd restart
+ 
+- name: remove welcome.conf(apache testpage)
+  file: path=/etc/httpd/conf.d/welcome.conf state=absent
+  notify: httpd restart
+
+- name: schema create
+  command: Console/cake schema create --yes chdir={{ document_root }}
+
+- name: init db
+  command: Console/cake init_dev_db chdir={{ document_root }}
+

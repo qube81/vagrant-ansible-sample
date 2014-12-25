@@ -1,0 +1,8 @@
+- hosts: web
+  sudo: yes
+  user: vagrant
+  gather_facts: yes
+  roles:
+   - web
+  vars:
+    - include: web.yml
